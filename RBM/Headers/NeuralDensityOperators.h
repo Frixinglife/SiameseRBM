@@ -10,8 +10,9 @@ public:
     SiameseRBM FirstSiameseRBM, SecondSiameseRBM;
     std::vector<std::vector<std::complex<double>>> RoMatrix;
     std::vector<double> EigRoMatrix;
+    double work_time;
 
-    NeuralDensityOperators();
+    NeuralDensityOperators(unsigned int N_v, unsigned int N_h, unsigned int N_a);
     
     void PrintRBMs() const;
     vector<double> VectorsAdd(const vector<double>& FirstVec, const vector<double>& SecondVec);

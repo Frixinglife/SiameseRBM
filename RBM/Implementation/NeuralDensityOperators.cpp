@@ -4,6 +4,7 @@
 #include <iomanip>
 #include <cmath>
 #include <complex>
+#include <chrono>
 #include "mkl.h"
 
 #define MAX_N 100
@@ -17,14 +18,15 @@ double rwork[2 * MAX_N];
 using std::cin;
 using std::cout;
 
-NeuralDensityOperators::NeuralDensityOperators() {
-    unsigned int N_h, N_v, N_a;
-    cout << "Number of neurons in the visible layer: ";
-    cin >> N_v;
-    cout << "Number of hidden layer neurons: ";
-    cin >> N_h;
-    cout << "Number of auxiliary layer neurons: ";
-    cin >> N_a;
+NeuralDensityOperators::NeuralDensityOperators(unsigned int N_v, unsigned int N_h, unsigned int N_a) {
+    //unsigned int N_v, N_h, N_a;
+
+    //cout << "Number of neurons in the visible layer: ";
+    //cin >> N_v;
+    //cout << "Number of hidden layer neurons: ";
+    //cin >> N_h;
+    //cout << "Number of auxiliary layer neurons: ";
+    //cin >> N_a;
 
     vector<vector<double>> W_1, W_2, V_1, V_2;
 
@@ -157,6 +159,8 @@ std::vector<std::vector<std::complex<double>>> NeuralDensityOperators::GetRoMatr
     std::vector<std::vector<std::complex<double>>> _RoMatrix(N_v, std::vector<std::complex<double>>(N_v, (0.0, 0.0)));
     std::complex<double> Sum(0.0, 0.0);
 
+    auto start = std::chrono::high_resolution_clock::now();
+
     for (unsigned int i = 0; i < N_v; ++i) {
         for (unsigned int j = 0; j < N_v; ++j) {
             std::vector<double> FirstSigma(N_v, 0.0);
@@ -180,6 +184,9 @@ std::vector<std::vector<std::complex<double>>> NeuralDensityOperators::GetRoMatr
             _RoMatrix[i][j] /= Sum;
         }
     }
+
+    auto diff = std::chrono::high_resolution_clock::now() - start;
+    work_time = std::chrono::duration_cast<std::chrono::seconds>(diff).count();
     
     RoMatrix = _RoMatrix;
 

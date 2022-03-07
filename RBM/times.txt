@@ -1,0 +1,37 @@
+N_v = 100, N_h = 100, N_a = 100
+Matrix size: 100
+Time: 1 s
+
+N_v = 200, N_h = 200, N_a = 200
+Matrix size: 200
+Time: 14 s 
+
+N_v = 300, N_h = 300, N_a = 300
+Matrix size: 300
+Time: 94 s ≈ 1.5 min
+
+N_v = 400, N_h = 400, N_a = 400
+Matrix size: 400
+Time: 281 s ≈ 4.68 min
+
+N_v = 500, N_h = 500, N_a = 500
+Matrix size: 500
+Time: 708 s ≈ 11.8 min
+
+N_v = 600, N_h = 600, N_a = 600
+Matrix size: 600
+Time: 1393 s ≈ 23.2 min
+
+N_v = 700, N_h = 700, N_a = 700
+Matrix size: 700
+Time: 2682 s ≈ 44.7 min
+
+N_v = 500, N_h = 10, N_a = 10
+Matrix size: 500
+Time: 10 s
+
+N_v = 1000, N_h = 100, N_a = 100
+Matrix size: 1000
+Time: 1129 s ≈ 18.8 min
+
+
