@@ -5,7 +5,7 @@
 
 void GetMatrix() {
     unsigned N_v, N_h, N_a;
-    N_v = N_h = N_a = 10;
+    N_v = N_h = N_a = 5;
 
     NeuralDensityOperators DensityOperators(N_v, N_h, N_a);
 
@@ -22,9 +22,9 @@ void GetTime() {
     std::ofstream fout("times.txt", std::ios_base::app);
 
     unsigned N_v, N_h, N_a;
-    N_v = 100;
-    N_h = 100;
-    N_a = 100;
+    N_v = 400;
+    N_h = 400;
+    N_a = 400;
 
     NeuralDensityOperators DensityOperators(N_v, N_h, N_a);
     DensityOperators.GetRoMatrix();

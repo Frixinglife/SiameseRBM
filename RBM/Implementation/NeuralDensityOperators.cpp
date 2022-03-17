@@ -6,6 +6,7 @@
 #include <complex>
 #include <chrono>
 #include "mkl.h"
+#include "omp.h"
 
 #define MAX_N 100
 MKL_Complex16 A[MAX_N * MAX_N];
@@ -94,6 +95,93 @@ double NeuralDensityOperators::VectorsScalarMult(
     return Answer;
 }
 
+void NeuralDensityOperators::VectorNumberMult(vector<double>& Vec, double Number) {
+    for (size_t i = 0; i < Vec.size(); ++i) {
+        Vec[i] *= Number;
+    }
+}
+
+vector<double> NeuralDensityOperators::MatrixVectorMult(const vector<vector<double>>& Matrix, const vector<double>& Vector) {
+    int n = static_cast<int>(Matrix.size());
+    int m = static_cast<int>(Vector.size());
+
+    vector<double> Answer(n);
+
+    for (int i = 0; i < n; i++)
+    {
+        Answer[i] = 0.0;
+        for (int j = 0; j < m; j++)
+        {
+            Answer[i] += Vector[j] * Matrix[i][j];
+        }
+    }
+
+    return Answer;
+}
+
+double NeuralDensityOperators::Matrix_GetGamma(const vector<double>& FirstSigma, const vector<double>& SecondSigma, char PlusOrMinus) {
+    double Answer = 0.0;
+    int N_h;
+    vector<double> FirstVec, SecondVec;
+
+    switch (PlusOrMinus) {
+    case '+':
+        Answer = VectorsScalarMult(FirstSiameseRBM.b, VectorsAdd(FirstSigma, SecondSigma));
+        FirstVec = VectorsAdd(MatrixVectorMult(FirstSiameseRBM.W, FirstSigma), FirstSiameseRBM.c);
+        SecondVec = VectorsAdd(MatrixVectorMult(FirstSiameseRBM.W, SecondSigma), FirstSiameseRBM.c);
+        N_h = FirstSiameseRBM.N_h;
+
+        #pragma omp parallel for reduction(+:Answer)
+        for (int i = 0; i < N_h; ++i) {
+            Answer += std::log(1.0 + std::exp(FirstVec[i])) + std::log(1.0 + std::exp(SecondVec[i]));
+        }
+
+        break;
+
+    case '-':
+        Answer = VectorsScalarMult(SecondSiameseRBM.b, VectorsSub(FirstSigma, SecondSigma));
+        FirstVec = VectorsAdd(MatrixVectorMult(SecondSiameseRBM.W, FirstSigma), SecondSiameseRBM.c);
+        SecondVec = VectorsAdd(MatrixVectorMult(SecondSiameseRBM.W, SecondSigma), SecondSiameseRBM.c);
+        N_h = SecondSiameseRBM.N_h;
+
+        #pragma omp parallel for reduction(+:Answer)
+        for (int i = 0; i < N_h; ++i) {
+            Answer += std::log(1.0 + std::exp(FirstVec[i])) - std::log(1.0 + std::exp(SecondVec[i]));
+        }
+
+        break;
+
+    default:
+        break;
+    }
+
+    Answer *= 0.5;
+
+    return Answer;
+}
+
+std::complex<double> NeuralDensityOperators::Matrix_GetPi(const vector<double>& FirstSigma, const vector<double>& SecondSigma) {
+    std::complex<double> Answer(0.0, 0.0);
+    vector<double> FirstVec, SecondVec, Vec;
+
+    FirstVec = MatrixVectorMult(FirstSiameseRBM.V, VectorsAdd(FirstSigma, SecondSigma));
+    SecondVec = MatrixVectorMult(SecondSiameseRBM.V, VectorsSub(FirstSigma, SecondSigma));
+
+    VectorNumberMult(FirstVec, 0.5);
+    VectorNumberMult(SecondVec, 0.5);
+    Vec = VectorsAdd(FirstVec, FirstSiameseRBM.d);
+    int N_a = FirstSiameseRBM.N_a;
+
+    for (int i = 0; i < N_a; ++i) {
+        std::complex<double> CurrentAnswer(Vec[i], SecondVec[i]);
+        std::complex<double> One(1.0, 0.0);
+
+        Answer += std::log(One + std::exp(CurrentAnswer));
+    }
+
+    return Answer;
+}
+
 double NeuralDensityOperators::GetGamma(const vector<double>& FirstSigma, const vector<double>& SecondSigma, char PlusOrMinus) {
     double Answer = 0.0;
 
@@ -148,21 +236,22 @@ std::complex<double> NeuralDensityOperators::GetPi(const vector<double>& FirstSi
 }
 
 std::complex<double> NeuralDensityOperators::GetRo(const vector<double>& FirstSigma, const vector<double>& SecondSigma) {
-    std::complex<double> Gamma(GetGamma(FirstSigma, SecondSigma, '+'), GetGamma(FirstSigma, SecondSigma, '-'));
-    std::complex<double> Pi = GetPi(FirstSigma, SecondSigma);
+    std::complex<double> Gamma(Matrix_GetGamma(FirstSigma, SecondSigma, '+'), Matrix_GetGamma(FirstSigma, SecondSigma, '-'));
+    std::complex<double> Pi = Matrix_GetPi(FirstSigma, SecondSigma);
 
     return std::exp(Gamma + Pi);
 }
 
 std::vector<std::vector<std::complex<double>>> NeuralDensityOperators::GetRoMatrix() {
-    unsigned int N_v = FirstSiameseRBM.N_v;
+    int N_v = FirstSiameseRBM.N_v;
     std::vector<std::vector<std::complex<double>>> _RoMatrix(N_v, std::vector<std::complex<double>>(N_v, (0.0, 0.0)));
     std::complex<double> Sum(0.0, 0.0);
 
     auto start = std::chrono::high_resolution_clock::now();
 
-    for (unsigned int i = 0; i < N_v; ++i) {
-        for (unsigned int j = 0; j < N_v; ++j) {
+    #pragma omp parallel for
+    for (int i = 0; i < N_v; ++i) {
+        for (int j = 0; j < N_v; ++j) {
             std::vector<double> FirstSigma(N_v, 0.0);
             std::vector<double> SecondSigma(N_v, 0.0);
 
@@ -179,14 +268,14 @@ std::vector<std::vector<std::complex<double>>> NeuralDensityOperators::GetRoMatr
         }
     }
 
-    for (unsigned int i = 0; i < N_v; ++i) {
-        for (unsigned int j = 0; j < N_v; ++j) {
+    for (int i = 0; i < N_v; ++i) {
+        for (int j = 0; j < N_v; ++j) {
             _RoMatrix[i][j] /= Sum;
         }
     }
 
     auto diff = std::chrono::high_resolution_clock::now() - start;
-    work_time = std::chrono::duration_cast<std::chrono::seconds>(diff).count();
+    work_time = static_cast<double>(std::chrono::duration_cast<std::chrono::seconds>(diff).count());
     
     RoMatrix = _RoMatrix;
 

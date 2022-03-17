@@ -18,8 +18,15 @@ public:
     vector<double> VectorsAdd(const vector<double>& FirstVec, const vector<double>& SecondVec);
     vector<double> VectorsSub(const vector<double>& FirstVec, const vector<double>& SecondVec);
     double VectorsScalarMult(const vector<double>& FirstVec, const vector<double>& SecondVec);
+    void VectorNumberMult(vector<double>& Vec, double Number);
+    vector<double> MatrixVectorMult(const vector<vector<double>>& Matrix, const vector<double>& Vector);
+
     double GetGamma(const vector<double>& FirstSigma, const vector<double>& SecondSigma, char PlusOrMinus);
     std::complex<double> GetPi(const vector<double>& FirstSigma, const vector<double>& SecondSigma);
+
+    double Matrix_GetGamma(const vector<double>& FirstSigma, const vector<double>& SecondSigma, char PlusOrMinus);
+    std::complex<double> Matrix_GetPi(const vector<double>& FirstSigma, const vector<double>& SecondSigma);
+
     std::complex<double> GetRo(const vector<double>& FirstSigma, const vector<double>& SecondSigma);
     std::vector<std::vector<std::complex<double>>> GetRoMatrix();
     void PrintRoMatrix() const;
